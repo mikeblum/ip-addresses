@@ -6,7 +6,8 @@ and from their the referenced geographic information about that IP address.
 """
 
 import logging
-from dbmodels import Location, IPV4_Network, IPV6_Network
+import time
+from db.models import Location, IPV4_Network, IPV6_Network
 from netaddr import IPNetwork
 import pprint
 from sqlalchemy import create_engine
@@ -31,15 +32,26 @@ def main():
     DBSession.configure(bind=engine, autoflush=False, expire_on_commit=False)
 
     try:
-        ip_addr = int(IPNetwork('119.249.54.86').ip)
+        SHANGHAI = '119.249.54.86'
+        CHICAGO = '73.168.172.188'
+        ip_addr = IPNetwork(CHICAGO)
+        cidr = str(IPNetwork(CHICAGO).cidr)
+        print('CIDR: {}'.format(ip_addr.cidr))
+        print('NETWORK: {}'.format(ip_addr.network))
+        print('BROADCAST: {}'.format(ip_addr.broadcast))
+        mask = int(ip_addr.ip)
+        t0 = time.time()
         query = DBSession.query(IPV4_Network, Location).\
-                    filter(ip_addr >= IPV4_Network.network_address).\
-                    filter(ip_addr <= IPV4_Network.broadcast_address).\
+                    filter(mask >= IPV4_Network.network_address).\
+                    filter(mask <= IPV4_Network.broadcast_address).\
                     join(Location, IPV4_Network.geoname_id == Location.geoname_id)
-        log.info(str(query))
+        # query = DBSession.query(IPV4_Network, Location).\
+        #             filter(IPV4_Network.cidr == cidr).\
+        #             join(Location, IPV4_Network.geoname_id == Location.geoname_id)
         for result in query:
             for segment in result:
                 pp.pprint(as_dict(segment))
+        log.info('done in {} secs'.format(str(time.time() - t0)))
     except Exception as exp:
         log.error('Aborting query {}'.format(exp))
         DBSession.rollback()

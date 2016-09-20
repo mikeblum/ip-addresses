@@ -4,7 +4,18 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
-class Location(Base):
+class Record(object):
+    """
+    Generic record methods to add to SqlAlchemy.Base
+    """
+    def as_dict(record):
+        '''
+        Convert a SQLAlchemy record to a
+        Python dict object for easy serialization
+        '''
+        return {c.name: getattr(record, c.name) for c in record.__table__.columns}
+
+class Location(Record, Base):
     __tablename__ = 'locations'
     geoname_id = Column(Integer, primary_key=True, nullable=False)
     locale_code = Column(String())
@@ -20,7 +31,7 @@ class Location(Base):
     metro_code = Column(String())
     time_zone = Column(String())
 
-class GeoIP_Network(object):
+class GeoIP_Network(Record):
     # enable auto-numbering
     __table_args__ = {'sqlite_autoincrement': True}
     cidr = Column(String(), primary_key=True, nullable=False)

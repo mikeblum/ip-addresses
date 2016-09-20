@@ -3,9 +3,8 @@ import logging
 import os
 import sys
 import time
-import models
 from netaddr import IPNetwork
-from dbmodels import Location, IPV4_Network, IPV6_Network
+from db.models import Location, IPV4_Network, IPV6_Network
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
