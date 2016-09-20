@@ -5,6 +5,7 @@ Example of querying for an IP address, finding the associated CIDR rage
 and from their the referenced geographic information about that IP address.
 """
 
+import argparse
 import logging
 import time
 from db.models import Location, IPV4_Network, IPV6_Network
@@ -12,6 +13,8 @@ from netaddr import IPNetwork
 import pprint
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
+
+import public_ip
 
 DBSession = scoped_session(sessionmaker())
 
@@ -31,27 +34,28 @@ def main():
 
     DBSession.configure(bind=engine, autoflush=False, expire_on_commit=False)
 
+    parser = argparse.ArgumentParser(description='Fetch geodata for an IPv4 address.')
+    parser.add_argument('addresses', nargs='+',
+                    help='IPv4 addresses')
+    args = parser.parse_args()
     try:
-        SHANGHAI = '119.249.54.86'
-        CHICAGO = '73.168.172.188'
-        ip_addr = IPNetwork(CHICAGO)
-        cidr = str(IPNetwork(CHICAGO).cidr)
-        print('CIDR: {}'.format(ip_addr.cidr))
-        print('NETWORK: {}'.format(ip_addr.network))
-        print('BROADCAST: {}'.format(ip_addr.broadcast))
-        mask = int(ip_addr.ip)
-        t0 = time.time()
-        query = DBSession.query(IPV4_Network, Location).\
-                    filter(mask >= IPV4_Network.network_address).\
-                    filter(mask <= IPV4_Network.broadcast_address).\
-                    join(Location, IPV4_Network.geoname_id == Location.geoname_id)
-        # query = DBSession.query(IPV4_Network, Location).\
-        #             filter(IPV4_Network.cidr == cidr).\
-        #             join(Location, IPV4_Network.geoname_id == Location.geoname_id)
-        for result in query:
-            for segment in result:
-                pp.pprint(as_dict(segment))
-        log.info('done in {} secs'.format(str(time.time() - t0)))
+        for addr in args.addresses:
+            ip_addr = IPNetwork(addr)
+            print('CIDR: {}'.format(ip_addr.cidr))
+            print('NETWORK: {}'.format(ip_addr.network))
+            print('BROADCAST: {}'.format(ip_addr.broadcast))
+            mask = int(ip_addr.ip)
+            t0 = time.time()
+            query = DBSession.query(IPV4_Network, Location).\
+                        filter(mask >= IPV4_Network.network_address).\
+                        filter(mask <= IPV4_Network.broadcast_address).\
+                        join(Location, IPV4_Network.geoname_id == Location.geoname_id)
+            if query.count() == 0:
+                log.warn('no geodata found for {}'.format(addr))
+            for result in query:
+                for segment in result:
+                    log.info(as_dict(segment))
+            log.info('done in {} secs'.format(str(time.time() - t0)))
     except Exception as exp:
         log.error('Aborting query {}'.format(exp))
         DBSession.rollback()
