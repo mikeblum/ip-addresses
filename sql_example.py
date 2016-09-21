@@ -14,8 +14,6 @@ import pprint
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-import public_ip
-
 DBSession = scoped_session(sessionmaker())
 
 logging.basicConfig(level=logging.DEBUG,
