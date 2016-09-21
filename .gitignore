@@ -1,3 +1,5 @@
 env
 *.csv
 *.sqlite
+.vagrant
+redis_playbook.retry
