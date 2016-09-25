@@ -22,7 +22,7 @@ def get_redis_connection():
     r = redis.Redis(
         host='127.0.0.1',
         port=6379, 
-        password='Nxp+_SN`:m[EeQmk-%{nUn0uIQ.m=OSJ'
+        password='redis'
     )
     return r
 
@@ -44,26 +44,22 @@ def gen_redis_proto(args):
     return proto
 
 def ingest_ip_addresses():
-    # r = get_redis_connection()
     with open('GeoLite2-City-Blocks-IPv4.csv', 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
-        cidrs = open('cidrs.txt', 'w')
+        cidrs = open('migration.txt', 'w')
         next(reader, None)  # skip the headers
         log.info('loaded IPV4 network data')
-        index = 1
         t0 = time.time()
         for row in reader:
             cidr = row[0]
             # index cidr metadata by their cidrs as the key
-            hkey = 'cidr:{}'.format(index)
+            hkey = 'cidr:{}'.format(cidr)
             metadata = {
-                'cidr': cidr,
                 'geoid': row[1],
                 'network': int(IPNetwork(cidr)[0]),
                 'broadcast': int(IPNetwork(cidr)[-1]),
                 'lat': str(row[7]),
-                'long': str(row[8]),
-                'range': int(row[9])
+                'long': str(row[8])
             }
             # add this cidr to the cidr:index - keyed by the sequential id
             # and max ip address range (broadcast address)
@@ -71,7 +67,7 @@ def ingest_ip_addresses():
                 'zadd', 
                 'cidr:index', 
                 metadata['broadcast'],
-                index
+                cidr
             ]))
             # create record for this cidr
             # convert to an args list
@@ -80,11 +76,33 @@ def ingest_ip_addresses():
                 redis_cmd.append(key)
                 redis_cmd.append(metadata[key])
             cidrs.write(gen_redis_proto(redis_cmd))
-            index += 1
-            # log.debug('{} <-> {}'.format(network_addr, broadcast_addr))
-        log.info('done in {} secs'.format(str(time.time() - t0)))
         # close output file
         cidrs.close()
 
+def ingest_city_locations():
+    with open('GeoLite2-City-Locations-en.csv', 'rb') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',')
+        next(reader, None)  # skip the headers
+        log.info('loaded city location data')
+        geoids = open('migration.txt', 'a')
+        t0 = time.time()
+        for row in reader:
+            geoid = row[0]
+            hkey = 'geoid:{}'.format(geoid)
+            metadata = {
+                'city': row[10],
+                'country': row[5]
+            }
+            # create record for this cidr
+            # convert to an args list
+            redis_cmd = ['hmset', hkey]
+            for key in metadata.keys():
+                redis_cmd.append(key)
+                redis_cmd.append(metadata[key])
+            geoids.write(gen_redis_proto(redis_cmd))
+        geoids.close()
+
+
 if __name__ == '__main__':
     ingest_ip_addresses()
+    ingest_city_locations()

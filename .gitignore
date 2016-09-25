@@ -3,3 +3,5 @@ env
 *.sqlite
 .vagrant
 redis_playbook.retry
+migration.txt
+redis_test.pyc sql_test.pyc test_redis.pyc test_sql.pyc
