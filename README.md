@@ -1,4 +1,4 @@
-## IPbot - a Slackbot for IP addresses
+## Benchmark querying IP geodata
 
 Download the MaxMind GeoLite2 data:
 
