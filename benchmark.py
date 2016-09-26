@@ -14,7 +14,7 @@ with open('benchmarks.csv', 'w') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     # writer.writerow({'first_name': 'Wonderful', 'last_name': 'Spam'})
-    for n in range(0, 1000):
+    for n in range(0, 2000):
         ip = get_ipv4_addr()
         sql_start = time.time()
         sql_info = test_sql.get_info(ip)
